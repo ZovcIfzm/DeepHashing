@@ -4,16 +4,18 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras.models import Model
 from sklearn.decomposition import PCA
 
+
+"""
+USAGE:
+This file is meant to be used as a library/module which is imported into other programs in order to test the algorithm.
+You can do data processing/evaluation elsewhere, this is just where raw model code is kept.
+The commented out code at the bottom just tests the functions above on dummy data
+
+"""
+
 #There are M+1 layers in the network
 #activation for every layer is tanh, layers are just dense
 #DATA IS ALWAYS ASSUMED TO BE IN ROW VECTORS FOR THIS WHOLE PROGRAM
-#TODO: initializations of weight matrices as described in the paper
-
-#loss hyperparameters
-l1 = 1
-l2 = 1
-l3 = 1
-alpha = 0 #only used for supervised loss
 
 #W for the first layer is supposed to be initialized to the first [layer_1_size] eigenvectors of the covariance matrix
 #this function just finds those eigenvectors where n_dims is the number to get
@@ -26,7 +28,6 @@ def initialize_W(data, n_dims):
 class DeepHash(Model):
     def __init__(self, layer_sizes, l2_, l3_, l1_, initial_W):
         super(DeepHash,self).__init__()
-        self.hash_size = hash_size
         self.layer_sizes = layer_sizes
         self.l1 = l1_
         self.l2 = l2_
@@ -64,6 +65,8 @@ class DeepHash(Model):
         self.add_loss(.5 * tf.square(tf.norm(quantized-h))) #both are row vectors, so it's fine
         #NOTE WE PUT THE TRANSPOSE FIRST BECAUSE WE HAVE ROW VECTORS, NOT COLUMN VECTORS HERE
         #Trace is not affected by transposing which is why we don't need another transpose on the whole thing
+
+        N = tf.cast(tf.shape(inputs)[0],tf.float32)
         self.add_loss(self.l1/(2*N) * tf.linalg.trace(tf.matmul(tf.transpose(h),h)))
         return h, quantized
 
@@ -79,7 +82,8 @@ def train_unsupervised(model, epochs,data, optimizer):
             print(loss)
 
 #Here pos_pairs and neg_pairs are assumed to be of shape [num_pairs, 2, data_dimension]
-def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer):
+#alpha is the coefficient for the supervised loss
+def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha):
     for i in range(epochs):
         with tf.GradientTape() as tape:
             out = model(data)
@@ -87,16 +91,16 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer):
             loss_unsup = tf.reduce_sum(model.losses)
 
             #Here is the supervised loss calculation as specified in the paper
-            out_pos1 = model(pos_pairs[:,0])
-            out_pos2 = model(pos_pairs[:,1])
-            out_neg1 = model(neg_pairs[:,0])
-            out_neg2 = model(neg_pairs[:,1])
+            out_pos1 = model(pos_pairs[:,0])[0] #we only need H here, not B, which is why we take the 0 index at the end
+            out_pos2 = model(pos_pairs[:,1])[0]
+            out_neg1 = model(neg_pairs[:,0])[0]
+            out_neg2 = model(neg_pairs[:,1])[0]
             pos_diff = out_pos1-out_pos2
             neg_diff = out_neg1 - out_neg2
-            N_pos = tf.shape(pos_pairs)[0]
-            N_neg = tf.shape(neg_pairs)[0]
-            sigma_W = 1/N_pos * tf.linalg.trace(tf.matmul(tf.transpose(pos_diff),pos_diff))
-            sigma_B = 1 / N_neg * tf.linalg.trace(tf.matmul(tf.transpose(neg_diff), neg_diff))
+            N_pos = tf.cast(tf.shape(pos_pairs)[0],tf.float32)
+            N_neg = tf.cast(tf.shape(neg_pairs)[0],tf.float32)
+            sigma_W = 1/N_pos * tf.matmul(tf.transpose(pos_diff),pos_diff)
+            sigma_B = 1 / N_neg * tf.matmul(tf.transpose(neg_diff), neg_diff)
             loss_sup = loss_unsup + alpha * tf.linalg.trace(sigma_W-sigma_B)
             loss = loss_unsup + loss_sup
 
@@ -106,17 +110,19 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer):
             print(loss)
 
 
-d = 100
-N = 1000
-hash_size = 20
-sample_data = np.random.random(size=[N,d])
-
-model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
-y = model(sample_data)
-print(y[0].shape)
-print(y[1].shape)
-opt = tf.keras.optimizers.Adam(.001)
-train_unsupervised(model,50,sample_data,opt)
+# d = 100
+# N = 1000
+# hash_size = 20
+# sample_data = np.random.random(size=[N,d])
+#
+# model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
+# y = model(sample_data)
+# print(y[0].shape)
+# print(y[1].shape)
+# opt = tf.keras.optimizers.Adam(.001)
+# train_unsupervised(model,50,sample_data,opt)
+# pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
+# train_supervised(model,10,pos_samples,neg_samples,sample_data,opt,.01)
 
 
 
