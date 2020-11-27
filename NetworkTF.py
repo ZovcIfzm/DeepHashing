@@ -71,19 +71,40 @@ class DeepHash(Model):
 
 
 # This trains a DeepHash model for the specified number of epochs given an optimizer object and training data
-def train_unsupervised(model, epochs, data, optimizer):
+def train_unsupervised(model, epochs, data, optimizer, conv_error):
+    old_loss = 0
+    epoch_loss = 0
+    print("Epoch block size: ", EPOCH_LOSS_BLOCK_SIZE)
     for i in range(epochs):
+        # GradientTape creates an environment that makes it easier to find gradients.
         with tf.GradientTape() as tape:
             out = model(data)
             loss = tf.reduce_sum(model.losses)
+
+            # Finds the gradient of the loss w.r.t. the trainable variables (parameters W, c)
             grad = tape.gradient(loss, model.trainable_variables)
+
+            # Updates W^m, c^m
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
-            print(loss)
+            
+            if i % EPOCH_LOSS_BLOCK_SIZE == 0 and i is not 0:
+                print("Epoch block", i/4, "avg. loss:", epoch_loss / EPOCH_LOSS_BLOCK_SIZE)
+                epoch_loss = 0
+            else:
+                epoch_loss += loss
+
+            if i > 1 and abs(loss-old_loss) < conv_error:
+                print("loss flattened below convergence error of", conv_error)
+                return
+        old_loss = loss
 
 
 # Here pos_pairs and neg_pairs are assumed to be of shape [num_pairs, 2, data_dimension]
 # alpha is the coefficient for the supervised loss
-def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha):
+def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha, conv_error):
+    old_loss = 0
+    epoch_loss = 0
+    print("Epoch block size: ", EPOCH_LOSS_BLOCK_SIZE)
     for i in range(epochs):
         with tf.GradientTape() as tape:
             out = model(data)
@@ -108,18 +129,31 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha
             # taking the gradient and applying the optimizer
             grad = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
-            print(loss)
+            
+            if i % EPOCH_LOSS_BLOCK_SIZE == 0 and i is not 0:
+                print("Epoch block", i/4, "avg. loss:", epoch_loss / EPOCH_LOSS_BLOCK_SIZE)
+                epoch_loss = 0
+            else:
+                epoch_loss += loss
+
+            if i > 1 and abs(loss-old_loss) < conv_error:
+                print("loss flattened below convergence error of", conv_error)
+                return
+        old_loss = loss
+
+# EPOCH_LOSS_BLOCK_SIZE = 4
 
 # d = 100
 # N = 1000
 # hash_size = 20
 # sample_data = np.random.random(size=[N,d])
+# CONV_ERROR = 0.01
 #
 # model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
-# y = model(sample_data)
+# # y = model(sample_data)
 # print(y[0].shape)
 # print(y[1].shape)
 # opt = tf.keras.optimizers.Adam(.001)
-# train_unsupervised(model,50,sample_data,opt)
+#train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
 # pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
-# train_supervised(model,10,pos_samples,neg_samples,sample_data,opt,.01)
+# train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
