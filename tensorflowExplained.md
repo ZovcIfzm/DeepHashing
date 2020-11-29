@@ -16,7 +16,7 @@ allows you to call the model like a function.
 As a result, when you call
   ``y = model(sample_data)``
 The __call__ function inherent to a tensorflow model is called, which then calls
-the ``build`` function that create the layer weights if it hasnt already been called,
+the ``build`` function that create the layer weights if it hasn't already been called,
 as well as the ``call`` function where you define what you want to happen when you call
 the model like a function.
 
@@ -30,9 +30,24 @@ Within our model class, the only other functions besides __init__, call, and bui
 
 So when you call ``model(sample_data)``, ``__call__`` is called which calls ``build`` then ``call``. These functions train the model with sample_data. Inside the call function, there is an additional function inherent to tensorflow models which is add_loss, this just keeps tracks of losses.
 
-# train_unsupervised runthrough
-This just repeatedly calls the model with the same data, training it repeatedly in which the loss decreases with each call.
+# How loss is calculated
+For both the unsupervised and supervised loss
 
-# train_supervised runtrhough
+# train_unsupervised runthrough
+This runs the DH algorithm outlined in the paper.
+  ``loss = tf.reduce_sum(model.losses)``
+Finds the value of the objective function
+  ``grad = tape.gradient(loss, model.trainable_variables)``
+Obtains the gradients of the objective function (loss) w.r.t. the trainable variables (W, c)
+  ``optimizer.apply_gradients(zip(grad, model.trainable_variables))``
+Updates W^m and C^m
+```
+if i > 1 and abs(loss-old_loss) < conv_error:
+              print("loss flattened below convergence error of", conv_error)
+              return
+```
+Stops the function once the loss flattens
+
+# train_supervised runthrough
 To be added
 

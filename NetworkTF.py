@@ -12,6 +12,7 @@ The commented out code at the bottom just tests the functions above on dummy dat
 
 """
 
+# Original paper: https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Liong_Deep_Hashing_for_2015_CVPR_paper.pdf
 
 # There are M+1 layers in the network
 # activation for every layer is tanh, layers are just dense
@@ -87,12 +88,14 @@ def train_unsupervised(model, epochs, data, optimizer, conv_error):
             # Updates W^m, c^m
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
             
+            # Printing loss
             if i % EPOCH_LOSS_BLOCK_SIZE == 0 and i is not 0:
                 print("Epoch block", i/4, "avg. loss:", epoch_loss / EPOCH_LOSS_BLOCK_SIZE)
                 epoch_loss = 0
             else:
                 epoch_loss += loss
 
+            # Stop condition
             if i > 1 and abs(loss-old_loss) < conv_error:
                 print("loss flattened below convergence error of", conv_error)
                 return
@@ -112,8 +115,7 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha
             loss_unsup = tf.reduce_sum(model.losses)
 
             # Here is the supervised loss calculation as specified in the paper
-            out_pos1 = model(pos_pairs[:, 0])[
-                0]  # we only need H here, not B, which is why we take the 0 index at the end
+            out_pos1 = model(pos_pairs[:, 0])[0]  # we only need H here, not B, which is why we take the 0 index at the end
             out_pos2 = model(pos_pairs[:, 1])[0]
             out_neg1 = model(neg_pairs[:, 0])[0]
             out_neg2 = model(neg_pairs[:, 1])[0]
@@ -130,30 +132,33 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha
             grad = tape.gradient(loss, model.trainable_variables)
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
             
+            # Printing loss
             if i % EPOCH_LOSS_BLOCK_SIZE == 0 and i is not 0:
                 print("Epoch block", i/4, "avg. loss:", epoch_loss / EPOCH_LOSS_BLOCK_SIZE)
                 epoch_loss = 0
             else:
                 epoch_loss += loss
 
+            # Stop condition
             if i > 1 and abs(loss-old_loss) < conv_error:
                 print("loss flattened below convergence error of", conv_error)
                 return
         old_loss = loss
 
-# EPOCH_LOSS_BLOCK_SIZE = 4
+EPOCH_LOSS_BLOCK_SIZE = 4
 
-# d = 100
-# N = 1000
-# hash_size = 20
-# sample_data = np.random.random(size=[N,d])
-# CONV_ERROR = 0.01
-#
-# model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
-# # y = model(sample_data)
-# print(y[0].shape)
-# print(y[1].shape)
-# opt = tf.keras.optimizers.Adam(.001)
-#train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
-# pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
-# train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
+if __name__ == '__main__':
+    d = 100
+    N = 1000
+    hash_size = 20
+    sample_data = np.random.random(size=[N,d])
+    CONV_ERROR = 0.01
+
+    model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
+    y = model(sample_data)
+    print(y[0].shape)
+    print(y[1].shape)
+    opt = tf.keras.optimizers.Adam(.001)
+    train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
+    # pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
+    # train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
