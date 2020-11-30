@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Dense,Conv2D, MaxPool2D, Flatten
 from tensorflow.keras.models import Model
 from sklearn.decomposition import PCA
 
@@ -10,6 +10,13 @@ This file is meant to be used as a library/module which is imported into other p
 You can do data processing/evaluation elsewhere, this is just where raw model code is kept.
 The commented out code at the bottom just tests the functions above on dummy data
 
+"""
+
+"""Syntax for model layer definition:
+If mode is "dense", just input a list of layer sizes where the last layer size is the hash size
+If mode is "conv", input a list of alternating 3-tuple and integer where the tuple is:
+(num filters, filter size, stride) and the number is max pool size
+At the end append one number to the list that is the hash size
 """
 
 # Original paper: https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Liong_Deep_Hashing_for_2015_CVPR_paper.pdf
@@ -26,13 +33,14 @@ def initialize_W(data, n_dims):
 
 
 class DeepHash(Model):
-    def __init__(self, layer_sizes, l2_, l3_, l1_, initial_W):
+    def __init__(self, layer_sizes, l2_, l3_, l1_, initial_W, mode='dense'):
         super(DeepHash, self).__init__()
         self.layer_sizes = layer_sizes
         self.l1 = l1_
         self.l2 = l2_
         self.l3 = l3_
         self.initial_W = initial_W
+        self.mode = mode
 
     def custom_reg(self, W):
         # NOTE THAT WE DO THE REVERSE OF THE PAPER WITH OUR TRANSPOSE HERE, SINCE TENSORFLOW STORES WEIGHT MATRICES TRANSPOSED
@@ -49,13 +57,33 @@ class DeepHash(Model):
 
     def build(self, input_shape):
         self.fc_layers = []
-        self.fc_layers.append(Dense(self.layer_sizes[0], activation='tanh', input_shape=input_shape,
+        if self.mode=='dense':
+            self.fc_layers.append(Dense(self.layer_sizes[0], activation='tanh', input_shape=input_shape,
                                     kernel_regularizer=self.custom_reg, bias_regularizer=self.custom_bias_reg,
                                     bias_initializer='ones', kernel_initializer=self.custom_W_init))
-        for layer in self.layer_sizes[1:]:
-            self.fc_layers.append(Dense(layer, activation='tanh', kernel_regularizer=self.custom_reg,
+        elif self.mode=='conv':
+            self.fc_layers.append(Conv2D(self.layer_sizes[0][0],self.layer_sizes[0][1],self.layer_sizes[0][2],activation='tanh'))
+            self.fc_layers.append(MaxPool2D(self.layer_sizes[1]))
+        for n, layer in enumerate(self.layer_sizes[1:]):
+            if self.mode=='dense':
+                self.fc_layers.append(Dense(layer, activation='tanh', kernel_regularizer=self.custom_reg,
                                         bias_regularizer=self.custom_bias_reg, bias_initializer='ones',
                                         kernel_initializer='identity'))
+            elif self.mode=='conv':
+                if n==0:
+                    continue
+                if n==len(self.layer_sizes)-2:
+                    break
+                if n%2==0:
+                    self.fc_layers.append(MaxPool2D(layer))
+                else:
+                    self.fc_layers.append(
+                        Conv2D(layer[0], layer[1], layer[2], activation='tanh'))
+
+        if self.mode=='conv':
+            self.fc_layers.append(Flatten())
+            self.fc_layers.append(Dense(self.layer_sizes[-1],activation='tanh'))
+
 
     def call(self, inputs):
         h = inputs
@@ -158,7 +186,24 @@ if __name__ == '__main__':
     y = model(sample_data)
     print(y[0].shape)
     print(y[1].shape)
+    model.summary()
     opt = tf.keras.optimizers.Adam(.001)
     train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
     # pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
     # train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
+
+    #conv version
+    imd = 32
+    chan = 3
+    N = 1000
+    hash_size = 20
+    sample_data = np.random.random(size=[N,imd, imd, chan])
+    CONV_ERROR = 0.01
+
+    model = DeepHash([(16,6,1),2,(32,4,2),2,(64,4,2),2,hash_size],1,.001,.001, None,'conv')
+    y = model(sample_data)
+    print(y[0].shape)
+    print(y[1].shape)
+    model.summary()
+    opt = tf.keras.optimizers.Adam(.001)
+    train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
