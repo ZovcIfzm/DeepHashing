@@ -134,3 +134,8 @@ dmypy.json
 
 # Manual
 assets/
+
+*.npz
+*.npy
+*.csv
+*.pkl
