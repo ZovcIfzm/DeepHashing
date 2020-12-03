@@ -19,6 +19,9 @@ If mode is "conv", input a list of alternating 3-tuple and integer where the tup
 At the end append one number to the list that is the hash size
 """
 
+EPOCH_LOSS_BLOCK_SIZE = 4
+CONV_ERROR = 0.01
+
 # Original paper: https://www.cv-foundation.org/openaccess/content_cvpr_2015/papers/Liong_Deep_Hashing_for_2015_CVPR_paper.pdf
 
 # There are M+1 layers in the network
@@ -95,7 +98,10 @@ class DeepHash(Model):
         # Trace is not affected by transposing which is why we don't need another transpose on the whole thing
 
         N = tf.cast(tf.shape(inputs)[0], tf.float32)
-        self.add_loss(self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h), h)))
+        self.add_loss(-self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h), h)))
+
+        # #TESTING ONLY
+        # self.add_loss(tf.reduce_sum(h))
         return h, quantized
 
 
@@ -173,37 +179,35 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha
                 return
         old_loss = loss
 
-EPOCH_LOSS_BLOCK_SIZE = 4
-
-if __name__ == '__main__':
-    d = 100
-    N = 1000
-    hash_size = 20
-    sample_data = np.random.random(size=[N,d])
-    CONV_ERROR = 0.01
-
-    model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
-    y = model(sample_data)
-    print(y[0].shape)
-    print(y[1].shape)
-    model.summary()
-    opt = tf.keras.optimizers.Adam(.001)
-    train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
-    # pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
-    # train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
-
-    #conv version
-    imd = 32
-    chan = 3
-    N = 1000
-    hash_size = 20
-    sample_data = np.random.random(size=[N,imd, imd, chan])
-    CONV_ERROR = 0.01
-
-    model = DeepHash([(16,6,1),2,(32,4,2),2,(64,4,2),2,hash_size],1,.001,.001, None,'conv')
-    y = model(sample_data)
-    print(y[0].shape)
-    print(y[1].shape)
-    model.summary()
-    opt = tf.keras.optimizers.Adam(.001)
-    train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
+# if __name__ == '__main__':
+#     d = 100
+#     N = 1000
+#     hash_size = 20
+#     sample_data = np.random.random(size=[N,d])
+#     CONV_ERROR = 0.01
+#
+#     model = DeepHash([64,32,20],1,.001,.001, initialize_W(sample_data,64))
+#     y = model(sample_data)
+#     print(y[0].shape)
+#     print(y[1].shape)
+#     model.summary()
+#     opt = tf.keras.optimizers.Adam(.001)
+#     train_unsupervised(model,50,sample_data,opt, CONV_ERROR)
+#     # pos_samples, neg_samples = np.random.random(size=[N,2,d]), np.random.random(size=[N,2,d])
+#     # train_supervised(model,100,pos_samples,neg_samples,sample_data,opt,.01, CONV_ERROR)
+#
+#     #conv version
+#     imd = 32
+#     chan = 3
+#     N = 1000
+#     hash_size = 20
+#     sample_data = np.random.random(size=[N,imd, imd, chan])
+#     CONV_ERROR = 0.01
+#
+#     model = DeepHash([(16,6,1),2,(32,4,2),2,(64,4,2),2,hash_size],1,.001,.001, None,'conv')
+#     y = model(sample_data)
+#     print(y[0].shape)
+#     print(y[1].shape)
+#     model.summary()
+#     opt = tf.keras.optimizers.Adam(.001)
+#     train_unsupervised(model,50,sample_data,opt, CONV_ERROR)

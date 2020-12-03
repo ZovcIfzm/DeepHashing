@@ -12,6 +12,6 @@ for item in arr:
     images.append(item["image"])
     labels.append(item['label'])
 
-images = np.array(images)
+images = np.array(images)/255
 labels = np.array(labels)
 np.savez("mnist_numpy",images=images,labels=labels)
