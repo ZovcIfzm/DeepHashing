@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 mnist_model/
+cifar_model/
 # C extensions
 *.so
 
