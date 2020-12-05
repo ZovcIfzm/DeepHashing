@@ -17,6 +17,9 @@ from dataset import *
 from NetworkTF import *
 import pickle
 
+from skimage.color import rgb2gray
+import GIST as cust_gist
+
 USE_EXISTING_MODEL = False
 
 # Straight from CIFAR-10 python3 documentation
@@ -42,8 +45,20 @@ def unpickle(file):
 
 # Takes in raw data from unpickle (10000x3072 vector)
 def convertToGIST(images):
-  gist_vectors = [gist.extract(img) for img in images]
-  return np.asarray(gist_vectors)
+  print("input to GIST", images.shape)
+
+  #gist_ex = gist.extract(images[0], nblocks=4, orientations_per_scale=(8,8,8))
+  param = {
+        "orientationsPerScale":np.array([8,8,8,8]),
+         "numberBlocks":[4,4],
+        "fc_prefilt":4,
+        "boundaryExtension": 10
+  }
+  gist = cust_gist.GIST(param)
+  gist_vectors = [gist._gist_extract(rgb2gray(img)) for img in images]
+  ret_array = np.asarray(gist_vectors)
+  #print("output from GIST", ret_array.shape)
+  return ret_array
 
 def evaluateCifar():
   try:
@@ -52,9 +67,10 @@ def evaluateCifar():
   except FileNotFoundError:
       print("First breaking classes since no existing dump was found")
       images,labels = load_ds_raw('cifar_numpy.npz')
+      #print("image size, ", images[0].shape)
       gist_data = np.asarray(convertToGIST(images))
-      print("gd shape", gist_data.shape)
-      print("label shape", labels.shape)
+      #print("gd shape", gist_data.shape)
+      #print("label shape", labels.shape)
       class_dict = break_classes(gist_data, labels)
       pickle.dump(class_dict,open("cifar_classdict.pkl","wb"))
 

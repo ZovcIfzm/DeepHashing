@@ -1,5 +1,8 @@
 
+import tensorflow as tf
 import numpy as np
+import tensorflow_datasets as tfds
+import pandas as pd
 
 def load_ds_raw(filename):
     raw_ds = np.load(filename)
@@ -27,3 +30,4 @@ def splitDataset(class_dict):
 
   galleryX, galleryY, queryX, queryY = np.array(galleryX), np.array(galleryY), np.array(queryX), np.array(queryY)
   return galleryX, galleryY, queryX, queryY
+  
