@@ -9,7 +9,6 @@ USAGE:
 This file is meant to be used as a library/module which is imported into other programs in order to test the algorithm.
 You can do data processing/evaluation elsewhere, this is just where raw model code is kept.
 The commented out code at the bottom just tests the functions above on dummy data
-
 """
 
 """Syntax for model layer definition:
@@ -50,6 +49,7 @@ class DeepHash(Model):
         # W is [this_layer_nodes, next_layer_nodes] in shape
         part1 = self.l2 * tf.square(tf.norm(tf.matmul(tf.transpose(W), W) - tf.eye(W.shape[1])))
         part2 = self.l3 / 2 * tf.square(tf.norm(W))
+        print(part1+part2)
         return part1 + part2
 
     def custom_bias_reg(self, b):
@@ -93,15 +93,19 @@ class DeepHash(Model):
         for layer in self.fc_layers:
             h = layer(h)
         quantized = tf.math.sign(h)
-        self.add_loss(.5 * tf.square(tf.norm(quantized - h)))  # both are row vectors, so it's fine
+        J1 = .5 * tf.square(tf.norm(quantized - h))
+        print(J1)
+        self.add_loss(J1)  # both are row vectors, so it's fine
         # NOTE WE PUT THE TRANSPOSE FIRST BECAUSE WE HAVE ROW VECTORS, NOT COLUMN VECTORS HERE
         # Trace is not affected by transposing which is why we don't need another transpose on the whole thing
 
-        N = tf.cast(tf.shape(inputs)[0], tf.float32)
-        self.add_loss(-self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h), h)))
+        h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=0),0)
 
-        # #TESTING ONLY
-        # self.add_loss(tf.reduce_sum(h))
+        N = tf.cast(tf.shape(inputs)[0], tf.float32)
+        J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.norm(tf.matmul(tf.transpose(h_tilde), h_tilde)))
+        print(J2)
+        self.add_loss(J2)
+
         return h, quantized
 
 
@@ -114,11 +118,14 @@ def train_unsupervised(model, epochs, data, optimizer, conv_error):
         # GradientTape creates an environment that makes it easier to find gradients.
         with tf.GradientTape() as tape:
             out = model(data)
+            print(out)
             loss = tf.reduce_sum(model.losses)
 
             # Finds the gradient of the loss w.r.t. the trainable variables (parameters W, c)
             grad = tape.gradient(loss, model.trainable_variables)
 
+            print("GRAD:")
+            print(np.mean([tf.reduce_mean(g) for g in grad]))
             # Updates W^m, c^m
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
             
@@ -130,7 +137,7 @@ def train_unsupervised(model, epochs, data, optimizer, conv_error):
                 epoch_loss += loss
 
             # Stop condition
-            if i > 1 and abs(loss-old_loss) < conv_error:
+            if i > 1 and abs(loss-old_loss) < conv_error and conv_error!=0:
                 print("loss flattened below convergence error of", conv_error)
                 return
         old_loss = loss

@@ -49,7 +49,7 @@ else:
     #train the model
     model = DeepHash([60,30,16],0,0,100,initialize_W(galleryX, 60))
     opt = tf.keras.optimizers.SGD(.001)
-    train_unsupervised(model,100,galleryX,opt,.01)
+    train_unsupervised(model,250,galleryX,opt,0)
     model.save("mnist_model")
 
 #run on queries
@@ -61,4 +61,3 @@ print(np.array_equal(query_preds.numpy(), np.ones_like(query_preds.numpy())))
 
 metrics = generate_metrics(query_preds,queryY)
 print(metrics)
-
