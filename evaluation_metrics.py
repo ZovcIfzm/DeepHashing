@@ -16,13 +16,35 @@ def mean_average_precision(pairwise_dists,labels):
     mAP = mAP/labels.shape[0]
     return mAP
 
-def hamming_radius(pairwise_dists,labels,N):
-    pass
+def precision_at_sample(pairwise_dists,labels,N):
+    total_to_average = 0
+    for i, label in enumerate(labels.tolist()):
+        sorted_inds_dists = np.argsort(pairwise_dists[i])
+        numerator = 0
+        for closest in sorted_inds_dists[1:1+N]:
+            if labels[closest]==label:
+                numerator+=1
+        total_to_average+=numerator/(N-1)
+    return total_to_average/labels.shape[0]
 
-def precision_at_sample():
-    pass
+def hamming_radius(pairwise_dists, labels,r):
+    to_average = 0
+    for i, label in enumerate(labels.tolist()):
+        numerator = 0
+        denominator = 0
+        for j, dist in enumerate(pairwise_dists[i]):
+            if i==j:
+                continue
+            if dist<r:
+                denominator+=1
+                if labels[j]==label:
+                    numerator+=1
+        to_average+=numerator/denominator
+    return to_average/labels.shape[0]
 
-def generate_metrics(hashes,labels,hamming_N = 100):
-    dists = pdist(hashes,metric="hamming")
+def generate_metrics(hashes,labels,hamming_N = 100, hamming_R=2):
+    dists = pdist(hashes,metric="hamming") * hashes.shape[1]
     mAP = mean_average_precision(dists,labels)
-    return mAP
+    precision_at_N = precision_at_sample(dists,labels,hamming_N)
+    hamming_rank = hamming_radius(dists,labels,hamming_R)
+    return mAP, precision_at_N,hamming_rank

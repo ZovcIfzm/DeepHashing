@@ -23,11 +23,11 @@ def runExperiment(modelName, trainingType, inputs):
       model = tf.keras.models.load_model(modelName)
   else:
       #train the model
-      model = DeepHash([60,30,16],0,0,100,initialize_W(galleryX, 60))
-      opt = tf.keras.optimizers.SGD(.001)
+      model = DeepHash([60,30,16],.1,.1,100,initialize_W(galleryX, 60))
+      opt = tf.keras.optimizers.SGD(.0001)
 
       if trainingType == "unsupervised":
-        train_unsupervised(model,100,galleryX,opt,k.CONV_ERROR)
+        train_unsupervised(model,300,galleryX,opt,k.CONV_ERROR)
       elif trainingType == "supervised":
         train_supervised(model,100,positivePairs, negativePairs, galleryX, opt, k.ALPHA, k.CONV_ERROR)
 
@@ -35,10 +35,10 @@ def runExperiment(modelName, trainingType, inputs):
 
   #run on queries
   query_preds_raw = model(queryX)
-  print(query_preds_raw)
+  #print(query_preds_raw)
   query_preds = query_preds_raw[1]
 
-  print(np.array_equal(query_preds.numpy(), np.ones_like(query_preds.numpy())))
+  #print(np.array_equal(query_preds.numpy(), np.ones_like(query_preds.numpy())))
 
   metrics = em.generate_metrics(query_preds,queryY)
   print(metrics)

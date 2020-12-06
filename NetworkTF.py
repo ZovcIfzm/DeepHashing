@@ -49,7 +49,7 @@ class DeepHash(Model):
         # W is [this_layer_nodes, next_layer_nodes] in shape
         part1 = self.l2 * tf.square(tf.norm(tf.matmul(tf.transpose(W), W) - tf.eye(W.shape[1])))
         part2 = self.l3 / 2 * tf.square(tf.norm(W))
-        print(part1+part2)
+        #print(part1+part2)
         return part1 + part2
 
     def custom_bias_reg(self, b):
@@ -93,18 +93,19 @@ class DeepHash(Model):
         for layer in self.fc_layers:
             h = layer(h)
         quantized = tf.math.sign(h)
-        J1 = .5 * tf.square(tf.norm(quantized - h))
-        print(J1)
-        self.add_loss(J1)  # both are row vectors, so it's fine
         # NOTE WE PUT THE TRANSPOSE FIRST BECAUSE WE HAVE ROW VECTORS, NOT COLUMN VECTORS HERE
         # Trace is not affected by transposing which is why we don't need another transpose on the whole thing
 
         h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=0),0)
 
         N = tf.cast(tf.shape(inputs)[0], tf.float32)
-        J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.norm(tf.matmul(tf.transpose(h_tilde), h_tilde)))
+        J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
         print(J2)
         self.add_loss(J2)
+
+        J1 = .5 * tf.square(tf.norm(quantized - h))/N
+        print(J1)
+        self.add_loss(J1)  # both are row vectors, so it's fine
 
         return h, quantized
 
@@ -118,14 +119,14 @@ def train_unsupervised(model, epochs, data, optimizer, conv_error):
         # GradientTape creates an environment that makes it easier to find gradients.
         with tf.GradientTape() as tape:
             out = model(data)
-            print(out)
+            #print(out)
             loss = tf.reduce_sum(model.losses)
 
             # Finds the gradient of the loss w.r.t. the trainable variables (parameters W, c)
             grad = tape.gradient(loss, model.trainable_variables)
 
-            print("GRAD:")
-            print(np.mean([tf.reduce_mean(g) for g in grad]))
+            #print("GRAD:")
+            #print(np.mean([tf.reduce_mean(g) for g in grad]))
             # Updates W^m, c^m
             optimizer.apply_gradients(zip(grad, model.trainable_variables))
             
