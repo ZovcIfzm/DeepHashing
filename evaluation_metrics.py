@@ -2,16 +2,6 @@ import numpy as np
 from sklearn.metrics import average_precision_score
 from sklearn.metrics import pairwise_distances as pdist
 
-def break_classes(X,y):
-    class_dict = {}
-    for i, sample in enumerate(X):
-        label = y[i]
-        if label in class_dict:
-            class_dict[label].append(sample)
-        else:
-            class_dict[label] = [sample]
-    return class_dict
-
 #so scores is just a way to rank the distances, the actual values don't matter, just the relative order
 #larger scores are higher ranked here, which is why we take the reciprocal
 #the label should just be 1 if it's the same class, 0 otherwise
@@ -25,8 +15,6 @@ def mean_average_precision(pairwise_dists,labels):
         mAP+=AP
     mAP = mAP/labels.shape[0]
     return mAP
-
-
 
 def hamming_radius(pairwise_dists,labels,N):
     pass
