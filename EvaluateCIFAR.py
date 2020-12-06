@@ -56,7 +56,7 @@ def convertToGIST(images):
   }
   gist = cust_gist.GIST(param)
   gist_vectors = [gist._gist_extract(rgb2gray(img)) for img in images]
-  ret_array = np.asarray(gist_vectors)
+  ret_array = np.array(gist_vectors, copy=False)
   #print("output from GIST", ret_array.shape)
   return ret_array
 
@@ -67,19 +67,14 @@ def evaluateCifar():
   except FileNotFoundError:
       print("First breaking classes since no existing dump was found")
       images,labels = load_ds_raw('cifar_numpy.npz')
-      #print("image size, ", images[0].shape)
-      gist_data = np.asarray(convertToGIST(images))
-      #print("gd shape", gist_data.shape)
-      #print("label shape", labels.shape)
+      gist_data = np.array(convertToGIST(images), copy=False)
       class_dict = break_classes(gist_data, labels)
       pickle.dump(class_dict,open("cifar_classdict.pkl","wb"))
 
   galleryX, galleryY, queryX, queryY = splitDataset(class_dict)
 
-    
   if USE_EXISTING_MODEL:
       model = tf.keras.models.load_model("cifar_model")
-
   else:
       #train the model
       model = DeepHash([60,30,16],0,0,100,initialize_W(galleryX, 60))

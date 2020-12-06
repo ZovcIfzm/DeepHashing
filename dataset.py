@@ -30,4 +30,24 @@ def splitDataset(class_dict):
 
   galleryX, galleryY, queryX, queryY = np.array(galleryX), np.array(galleryY), np.array(queryX), np.array(queryY)
   return galleryX, galleryY, queryX, queryY
-  
+
+  def generatePairs(class_dict):
+    positivePairs = []
+    for each_class in class_dict:
+      classImages = class_dict[each_class]
+      lenOfClass = len(classImages)
+      for i in range(lenOfClass):
+        for j in range(i+1, lenOfClass):
+          positivePairs.append((classImages[i], classImages[j]))
+    positivePairs = np.array(positivePairs, copy=False)
+
+    negativePairs = []
+    numClasses = len(class_dict)
+    for cur_class_num in range(numClasses):
+      classImages = class_dict[cur_class_num]
+      for img in classImages:
+        for other_class_num in range(cur_class_num+1, numClasses):
+          for other_img in class_dict[other_class_num]:
+            negativePairs.append((img, other_img))
+    negativePairs = np.array(negativePairs, copy=False)
+    return positivePairs, negativePairs
