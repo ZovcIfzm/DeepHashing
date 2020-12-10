@@ -96,7 +96,7 @@ class DeepHash(Model):
         # NOTE WE PUT THE TRANSPOSE FIRST BECAUSE WE HAVE ROW VECTORS, NOT COLUMN VECTORS HERE
         # Trace is not affected by transposing which is why we don't need another transpose on the whole thing
 
-        h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=0),0)
+        h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=1),1)
 
         N = tf.cast(tf.shape(inputs)[0], tf.float32)
         J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
