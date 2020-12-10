@@ -20,7 +20,7 @@ def evaluateMNIST():
 
     # Generate inputs (supervised is a superset of unsupervised + +/- pairs)
     print("Generating Inputs")
-    inputs = ds.generateInputs(classDict, "supervised")
+    inputs = ds.generateInputs(classDict, "unsupervised")
 
     # Run experiments
     print("Running unsupervised experiment")

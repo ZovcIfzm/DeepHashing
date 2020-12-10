@@ -99,7 +99,7 @@ class DeepHash(Model):
         h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=1),1)
 
         N = tf.cast(tf.shape(inputs)[0], tf.float32)
-        J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
+        J2 = tf.math.negative(self.l1 / (2/N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
         print(J2)
         self.add_loss(J2)
 

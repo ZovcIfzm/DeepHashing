@@ -29,8 +29,6 @@ def precision_at_sample(pairwise_dists,labels,N):
 
 def hamming_radius(pairwise_dists, labels,r):
     to_average = 0
-    numma = 0
-    denna = 0
     for i, label in enumerate(labels.tolist()):
         numerator = 0
         denominator = 0
@@ -39,15 +37,13 @@ def hamming_radius(pairwise_dists, labels,r):
                 continue
             if dist<r:
                 denominator+=1
-                denna+=1
                 if labels[j]==label:
                     numerator+=1
-                    numma+=1
         if denominator!=0:
             to_average+=numerator/denominator
         else:
             to_average+=1
-    return numma/denna
+    return to_average/labels.shape[0]
 
 def generate_metrics(hashes,labels,hamming_N = 500, hamming_R=2):
     dists = pdist(hashes,metric="hamming") * hashes.shape[1]
