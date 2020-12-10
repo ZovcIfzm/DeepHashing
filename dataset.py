@@ -8,7 +8,7 @@ import itertools
 import constants as k
 
 def load_ds_raw(filename):
-    raw_ds = np.load(filename)
+    raw_ds = np.load(filename, allow_pickle=True)
     images,labels = raw_ds['images'], raw_ds['labels']
     print(images.shape)
     print(labels.shape)
