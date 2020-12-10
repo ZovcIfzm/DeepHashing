@@ -24,8 +24,10 @@ def runExperiment(modelName, trainingType, inputs):
   else:
       #train the model
       model = DeepHash([60,30,16],.1,.1,100,initialize_W(galleryX, 60))
-      opt = tf.keras.optimizers.SGD(.0001)
+      #model = DeepHash([(16,6,1),2,(8,4,2),2,(4,4,2),2,16], .1, .1, 100, initialize_W(galleryX, 60),mode="conv")
+      opt = tf.keras.optimizers.SGD(.001)
 
+      #galleryX= galleryX.reshape([-1,28,28,1])
       if trainingType == "unsupervised":
         train_unsupervised(model,300,galleryX,opt,k.CONV_ERROR)
       elif trainingType == "supervised":

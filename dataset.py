@@ -46,6 +46,7 @@ def splitDataset(class_dict):
 
 
 def generatePairs(class_dict):
+  print("making pairs")
   numPos = k.NUMPOS
   numNeg = k.NUMNEG
 
@@ -58,36 +59,32 @@ def generatePairs(class_dict):
   numPosPerClass = int(numPos/numClasses)
   positivePairs = []
   for each_class in class_dict:
-    classImages = class_dict[each_class]
+    classImages = np.array(class_dict[each_class])
     lenOfClass = len(classImages)
-
-    pairs = list(itertools.combinations(list(range(0,lenOfClass)), 2)) 
-    random.shuffle(pairs) 
-    for i in range(0, numPosPerClass):
-      positivePairs.append((classImages[pairs[i][0]], classImages[pairs[i][1]]))
+    indices = np.random.choice(lenOfClass,numPosPerClass*2,replace=False).astype(np.int32)
+    left_indices, right_indices = indices[:numPosPerClass].astype(np.int32), indices[numPosPerClass:].astype(np.int32)
+    left_ims,right_ims = classImages[left_indices,], classImages[right_indices,]
+    for left,right in zip(left_ims,right_ims):
+      positivePairs.append((left, right))
 
   positivePairs = np.array(positivePairs, copy=False)
+  print("made positive pairs!")
 
-  a = numClasses - 1
-  if numNeg < (a+1)*a*0.5:
-    print("ERROR")
-    print("Number of negative pairs is less than 0.5(a+1)*a")
-    print("Where a = numClasses - 1")
-    raise ValueError
-
-  pairsPerClassPair = int(numNeg/(0.5*a*(a+1)))
-  lenOfClass = len(class_dict[each_class])  
-  pairs = list(itertools.combinations(list(range(0,lenOfClass)), 2)) 
-  random.shuffle(pairs)
+  numNegPerClass = int(numNeg / numClasses)
   negativePairs = []
+  for each_class in class_dict.keys():
+      other_keys = list(class_dict.keys())
+      other_keys.remove(each_class)
+      other_classes = np.concatenate([np.array(class_dict[k]) for k in other_keys])
+      lenOfClass = len(class_dict[each_class])
+      indices = np.random.choice(lenOfClass,numNegPerClass,replace=False).astype(np.int32)
+      other_indices = np.random.choice(other_classes.shape[0],numNegPerClass,replace=False)
+      left_ims = np.array(class_dict[each_class])[indices]
+      right_ims = other_classes[other_indices]
+      for left, right in zip(left_ims, right_ims):
+          negativePairs.append((left, right))
 
-  for each_class in range(numClasses):
-    for each_other_class in range(each_class+1, numClasses):      
-      for i in range(pairsPerClassPair):
-        negativePairs.append((class_dict[each_class][pairs[i][0]], class_dict[each_other_class][pairs[i][1]]))
-
-  negativePairs = np.array(negativePairs, copy=False)
-  return positivePairs, negativePairs
+  return np.array(positivePairs), np.array(negativePairs)
 
 def generateInputs(class_dict, training_type):
   inputs = {}

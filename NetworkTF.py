@@ -65,7 +65,7 @@ class DeepHash(Model):
                                     kernel_regularizer=self.custom_reg, bias_regularizer=self.custom_bias_reg,
                                     bias_initializer='ones', kernel_initializer=self.custom_W_init))
         elif self.mode=='conv':
-            self.fc_layers.append(Conv2D(self.layer_sizes[0][0],self.layer_sizes[0][1],self.layer_sizes[0][2],activation='tanh'))
+            self.fc_layers.append(Conv2D(self.layer_sizes[0][0],self.layer_sizes[0][1],self.layer_sizes[0][2],activation='tanh',padding='same'))
             self.fc_layers.append(MaxPool2D(self.layer_sizes[1]))
         for n, layer in enumerate(self.layer_sizes[1:]):
             if self.mode=='dense':
@@ -81,7 +81,7 @@ class DeepHash(Model):
                     self.fc_layers.append(MaxPool2D(layer))
                 else:
                     self.fc_layers.append(
-                        Conv2D(layer[0], layer[1], layer[2], activation='tanh'))
+                        Conv2D(layer[0], layer[1], layer[2], activation='tanh',padding='same'))
 
         if self.mode=='conv':
             self.fc_layers.append(Flatten())
