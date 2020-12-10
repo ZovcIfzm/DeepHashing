@@ -40,12 +40,12 @@ def evaluateCIFAR():
 
   # Generate inputs (supervised is a superset of unsupervised + +/- pairs)
   print("Generating Inputs")
-  inputs = ds.generateInputs(classDict, "unsupervised")
+  inputs = ds.generateInputs(classDict, "supervised")
 
   # Run experiments
   print("Running unsupervised experiment")
-  exp.runExperiment("cifar_model", "unsupervised", inputs)
-  #exp.runExperiment("cifar_model", "supervised", inputs)
+  #upervised", inputs)
+  exp.runExperiment("cifar_model", "supervised", inputs)
 
 if __name__ == '__main__':
   evaluateCIFAR()

@@ -42,3 +42,6 @@ def runExperiment(modelName, trainingType, inputs):
 
   metrics = em.generate_metrics(query_preds,queryY)
   print(metrics)
+  print("mAP: ", metrics[0])
+  print("Precision at N: ", metrics[1])
+  print("Hamming rank: ", metrics[2])

@@ -3,6 +3,9 @@ import tensorflow as tf
 import numpy as np
 import tensorflow_datasets as tfds
 import pandas as pd
+import random
+import itertools
+import constants as k
 
 def load_ds_raw(filename):
     raw_ds = np.load(filename)
@@ -41,24 +44,48 @@ def splitDataset(class_dict):
   galleryX, galleryY, queryX, queryY = np.array(galleryX), np.array(galleryY), np.array(queryX), np.array(queryY)
   return galleryX, galleryY, queryX, queryY
 
+
 def generatePairs(class_dict):
+  numPos = k.NUMPOS
+  numNeg = k.NUMNEG
+
+  numClasses = len(class_dict)
+  if numPos < numClasses:
+    print("ERROR")
+    print("Number of positive pairs less than number of classes")
+    raise ValueError
+
+  numPosPerClass = int(numPos/numClasses)
   positivePairs = []
   for each_class in class_dict:
     classImages = class_dict[each_class]
     lenOfClass = len(classImages)
-    for i in range(lenOfClass):
-      for j in range(i+1, lenOfClass):
-        positivePairs.append((classImages[i], classImages[j]))
+
+    pairs = list(itertools.combinations(list(range(0,lenOfClass)), 2)) 
+    random.shuffle(pairs) 
+    for i in range(0, numPosPerClass):
+      positivePairs.append((classImages[pairs[i][0]], classImages[pairs[i][1]]))
+
   positivePairs = np.array(positivePairs, copy=False)
 
+  a = numClasses - 1
+  if numNeg < (a+1)*a*0.5:
+    print("ERROR")
+    print("Number of negative pairs is less than 0.5(a+1)*a")
+    print("Where a = numClasses - 1")
+    raise ValueError
+
+  pairsPerClassPair = int(numNeg/(0.5*a*(a+1)))
+  lenOfClass = len(class_dict[each_class])  
+  pairs = list(itertools.combinations(list(range(0,lenOfClass)), 2)) 
+  random.shuffle(pairs)
   negativePairs = []
-  numClasses = len(class_dict)
-  for cur_class_num in range(numClasses):
-    classImages = class_dict[cur_class_num]
-    for img in classImages:
-      for other_class_num in range(cur_class_num+1, numClasses):
-        for other_img in class_dict[other_class_num]:
-          negativePairs.append((img, other_img))
+
+  for each_class in range(numClasses):
+    for each_other_class in range(each_class+1, numClasses):      
+      for i in range(pairsPerClassPair):
+        negativePairs.append((class_dict[each_class][pairs[i][0]], class_dict[each_other_class][pairs[i][1]]))
+
   negativePairs = np.array(negativePairs, copy=False)
   return positivePairs, negativePairs
 

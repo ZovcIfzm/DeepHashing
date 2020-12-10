@@ -47,4 +47,4 @@ def generate_metrics(hashes,labels,hamming_N = 100, hamming_R=2):
     mAP = mean_average_precision(dists,labels)
     precision_at_N = precision_at_sample(dists,labels,hamming_N)
     hamming_rank = hamming_radius(dists,labels,hamming_R)
-    return mAP, precision_at_N,hamming_rank
+    return mAP, precision_at_N, hamming_rank
