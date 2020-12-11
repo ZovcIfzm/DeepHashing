@@ -96,10 +96,11 @@ class DeepHash(Model):
         # NOTE WE PUT THE TRANSPOSE FIRST BECAUSE WE HAVE ROW VECTORS, NOT COLUMN VECTORS HERE
         # Trace is not affected by transposing which is why we don't need another transpose on the whole thing
 
-        h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=1),1)
+        #h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=1),1)
+        h_tilde = h-tf.expand_dims(tf.reduce_mean(h,axis=0),0)
 
         N = tf.cast(tf.shape(inputs)[0], tf.float32)
-        J2 = tf.math.negative(self.l1 / (2/N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
+        J2 = tf.math.negative(self.l1 / (2 * N) * tf.linalg.trace(tf.matmul(tf.transpose(h_tilde), h_tilde)))
         print(J2)
         self.add_loss(J2)
 
@@ -167,7 +168,8 @@ def train_supervised(model, epochs, pos_pairs, neg_pairs, data, optimizer, alpha
             N_neg = tf.cast(tf.shape(neg_pairs)[0], tf.float32)
             sigma_W = 1 / N_pos * tf.matmul(tf.transpose(pos_diff), pos_diff)
             sigma_B = 1 / N_neg * tf.matmul(tf.transpose(neg_diff), neg_diff)
-            loss_sup = loss_unsup + alpha * tf.linalg.trace(sigma_W - sigma_B)
+            loss_sup = alpha * tf.linalg.trace(sigma_W - sigma_B)
+            print("sup loss: " + str(loss_sup))
             loss = loss_unsup + loss_sup
 
             # taking the gradient and applying the optimizer
